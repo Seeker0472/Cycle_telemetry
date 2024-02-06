@@ -11,9 +11,9 @@ export default {
     data() {
         return {
             scale: 30000,
-            end: 0,
             length: 0,
             begin: 0,
+            end: 0,
             pivot: 0,
             offsetMilliSec: 0,
             drag: 0,
@@ -50,7 +50,7 @@ export default {
         drawAll() {//画出所有东西
             this.$emit('timeNow', this.$dayjs(this.begin).add(this.offsetMilliSec, 'millisecond').toDate());
             this.setWidthHeight();
-            window.addEventListener('resize', this.setWidthHeight);
+            window.addEventListener('resize', this.drawAll);
             this.drawTimeLine(this.offsetMilliSec, this.pivot);
             this.drawEntryExitPoint();
         },
@@ -261,6 +261,7 @@ export default {
             this.timelineEvents.forEach(element => {
                 ctx.fillStyle = "rgb(200,0,0)";
                 ctx.fillRect((this.$dayjs(element.timestart).diff(this.begin) - this.offsetMilliSec) / this.scale + this.pivot, canvas.height / 10 * element.line + 2, this.$dayjs(element.timeend).diff(element.timestart) / this.scale, canvas.height / 11);
+                console.log("scale" + this.scale + "offsetMilliSec" + this.offsetMilliSec + "pivot" + this.pivot + "start" + (this.$dayjs(element.timestart).diff(this.begin) - this.offsetMilliSec) / this.scale + this.pivot + "end" + (this.$dayjs(element.timeend).diff(this.begin) - this.offsetMilliSec) / this.scale + this.pivot);
             });
 
         },
@@ -320,6 +321,7 @@ export default {
             canvas.width = width * ratio;
             canvas.height = height * ratio;
             canvas.style.height = '200px';
+            canvas.style.width = '100%';
             console.log(`Width: ${width}, Height: ${height}, Ratio: ${ratio}`);
             //延时绘制
             // setTimeout(() => {

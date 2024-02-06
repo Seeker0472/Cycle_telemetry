@@ -5,6 +5,10 @@ import { createProtocol } from 'vue-cli-plugin-electron-builder/lib'
 import installExtension, { VUEJS3_DEVTOOLS } from 'electron-devtools-installer'
 const isDevelopment = process.env.NODE_ENV !== 'production'
 
+const path = require('path');
+
+const { ipcMain, dialog } = require('electron');
+
 // Scheme must be registered before the app is ready
 protocol.registerSchemesAsPrivileged([
   { scheme: 'app', privileges: { secure: true, standard: true } }
@@ -16,11 +20,15 @@ async function createWindow() {
     width: 800,
     height: 600,
     webPreferences: {
-      
+      // 指定预加载脚本的路径
+      preload: path.join(__dirname, 'preload.js'),
       // Use pluginOptions.nodeIntegration, leave this alone
       // See nklayman.github.io/vue-cli-plugin-electron-builder/guide/security.html#node-integration for more info
       nodeIntegration: process.env.ELECTRON_NODE_INTEGRATION,
       contextIsolation: !process.env.ELECTRON_NODE_INTEGRATION
+      // nodeIntegration: true,
+      // enableRemoteModule: true,
+      // contextIsolation: true,
     }
   })
 
@@ -79,3 +87,17 @@ if (isDevelopment) {
     })
   }
 }
+
+
+
+ipcMain.on('open-file-dialog', (event) => {
+  dialog.showOpenDialog({
+    properties: ['openFile']
+  }).then(result => {
+    if (!result.canceled) {
+      event.sender.send('selected-file', result.filePaths);
+    }
+  }).catch(err => {
+    console.log(err);
+  });
+});
