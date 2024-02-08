@@ -1,7 +1,9 @@
 <template>
     <div class="con">
         <div class="Buttons">
-            <el-button color="#626aef" plain @click="gotoPage(1)">导入数据</el-button>
+            <el-button color="#626aef" plain @click="gotoPage(1)"> <el-icon>
+                    <Plus />
+                </el-icon>导入数据</el-button>
             <el-button color="#626aef" plain @click="gotoPage(2)">创建工程</el-button>
             <el-button color="#626aef" plain @click="gotoPage(3)">所有数据</el-button>
             <el-button color="#626aef" plain @click="gotoPage(4)">所有工程</el-button>

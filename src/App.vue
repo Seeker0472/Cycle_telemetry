@@ -1,8 +1,8 @@
 <template>
-  <WelcomePage v-if="show == 0" @gotoPage="gotoPage"></WelcomePage>
+  <WelcomePage v-if="show == 0 || show == 2" @gotoPage="gotoPage"></WelcomePage>
   <ImportData v-if="show == 1"></ImportData>
-  <CreateProject v-if="show == 2"></CreateProject>
-  <AllData v-if="show == 3"></AllData>
+  <CreateProject ref="CreateProject"></CreateProject>
+  <AllData v-if="show == 3" @gotoPage="gotoPage"></AllData>
   <AllProjects v-if="show == 4"></AllProjects>
   <Sync v-if="show == 5"></Sync>
   <About v-if="show == 6"></About>
@@ -42,6 +42,9 @@ export default {
   methods: {
     gotoPage(i) {
       this.show = i;
+      if (i == 2) {
+        this.$refs.CreateProject.showWindow();
+      }
     }
   },
   mounted() {
