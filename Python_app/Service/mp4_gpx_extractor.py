@@ -1,6 +1,6 @@
 import gpmf
 import numpy as np
-from db import read_data_db
+from db import insert_data_db
 import gpxpy
 import gpxpy.gpx
 from dateutil import tz

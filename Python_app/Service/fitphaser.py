@@ -1,6 +1,6 @@
 import fitdecode
 import datetime
-from db import read_data_db
+from db import insert_data_db
 
 
 def phase_fit(path,name,comments):
@@ -31,7 +31,7 @@ def phase_fit(path,name,comments):
                 # print()
                 fit_data.append(recordData)
 
-    return read_data_db.store_fit_data(fit_data, path, name,comments)
+    return insert_data_db.store_fit_data(fit_data, path, name,comments)
 
 # for data in fit_data[1]["fields"]:
 #     print(data)
