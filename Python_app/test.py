@@ -1,4 +1,4 @@
-from Service import mp4_gpx_extractor, fitphaser, fit
+from Service import mp4_gpx_extractor, fitphaser, fit, xingzhe
 from db import read_data
 
 # fitphaser.phase_fit("C:\\Users\\gmx47\\OneDrive\\桌面\\test\\te.fit", "TestFit")
@@ -9,5 +9,7 @@ from db import read_data
 #
 # print(mp4_gpx_extractor.get_mp4_start_end("C:\\Data\\100GOPRO\\GH030107.MP4"))
 
-da = fit.create_fit("TABLE_0")
-print(da)
+# da = fit.create_fit("TABLE_0")
+# print(da)
+
+xingzhe.get_activity_list()
