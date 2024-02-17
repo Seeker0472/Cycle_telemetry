@@ -10,8 +10,7 @@
                     <div class="ProjDesc">{{ item.comments }}</div>
                     <time class="time">{{ item.created_time }}</time>
                     <div class="bottom">
-
-                        <el-button text class="button">打开</el-button>
+                        <el-button text class="button" @click="this.gotoProject(item.cut_id)">打开</el-button>
                         <el-button text class="button">修改</el-button>
                         <el-button text class="button">删除</el-button>
                     </div>
@@ -43,14 +42,20 @@ export default {
 
         };
     },
-    methods: {
-
-    },
     mounted() {
-        this.$axios.get('/api/getAllCut').then((response) => {
+        this.$axios.post('/api/getAllCut', {
+            data: "all"
+        }).then((response) => {
             console.log(response.data);
-            this.tableData = response.data;
+            this.tableData = response.data.data;
+            console.log(this.tableData);
         });
+    },
+    methods: {
+        gotoProject(i) {
+            console.log(i);
+            this.$emit('gotoPage', 7, i);
+        }
     }
 };
 </script>
@@ -70,6 +75,7 @@ export default {
 .bottom {
     margin-top: 5px;
     margin-bottom: -20px;
+    margin-left: -10px;
     line-height: 12px;
     display: flex;
     justify-content: space-between;

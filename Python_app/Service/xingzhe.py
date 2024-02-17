@@ -5,6 +5,7 @@ from Crypto.Cipher import PKCS1_v1_5 as Cipher_pkcs1_v1_5
 import base64
 import requests
 import json
+from db import add_info_db
 
 
 def login(user_account, user_password):
@@ -49,12 +50,31 @@ def login(user_account, user_password):
 
     response = requests.post('https://www.imxingzhe.com/api/v4/account/login', data=json.dumps(login_data),
                              headers=headers, cookies=coo)
+    if response.status_code != 200:
+        raise Exception("登录失败" + response.text)
+    res_json = response.json()
+    if res_json['res'] != 1:
+        raise Exception("登录失败" + str(res_json))
 
-    for cookie in response.cookies:
-        print(f"Name: {cookie.name}, Value: {cookie.value}")
+    # for cookie in response.cookies:
+    #     print(f"Name: {cookie.name}, Value: {cookie.value}")
+    #
+    stored_cookie = {
+        "csrftoken": response.cookies.get("csrftoken"),
+        "sessionid": response.cookies.get("sessionid"),
+    }
+
+    stored_others = {
+        "enuid": res_json["data"]["enuid"],
+        "userid": res_json["data"]["userid"],
+    }
+
+    add_info_db.add_account(platform=1, name=res_json["data"]["username"], account=user_account, password=user_password,
+                            cookie=str(stored_cookie), others=str(stored_others), info="", comments="")
 
     # 打印响应体（或其他处理）
     print(response.text)
+    return 'OK'
 
 
 def encode_password(public_key, rd, user_password):

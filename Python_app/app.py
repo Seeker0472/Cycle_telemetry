@@ -4,6 +4,7 @@ from db import get_info_db, add_info_db
 import response
 import Service.mp4_gpx_extractor as mp4_gpx_extractor
 import Service.fitphaser as fit_phaser
+import Service.xingzhe as xingzhe
 
 app = Flask(__name__)
 
@@ -84,6 +85,25 @@ def add_file():
             return response.fail(str(e))
 
     return response.success({'id': ret})
+
+
+@app.route('/api/addAccount', methods=['POST'])
+@cross_origin()
+def add_account():
+    if request.is_json:
+        try:
+            data = request.get_json()
+            platform = data.get('Platform')
+            account = data.get('account')
+            password = data.get('passWord')
+            if platform == 1:
+                xingzhe.login(account, password)
+                return response.success()
+            else:
+                raise Exception("Unsupported platform")
+        except Exception as e:
+            return response.fail(str(e))
+    return response.fail("Bad Request")
 
 
 #

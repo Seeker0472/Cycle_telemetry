@@ -8,6 +8,7 @@
             <el-button color="#626aef" plain @click="gotoPage(3)">所有数据</el-button>
             <el-button color="#626aef" plain @click="gotoPage(4)">所有工程</el-button>
             <el-button color="#626aef" plain @click="gotoPage(5)">同步</el-button>
+            <el-button color="#626aef" plain @click="gotoPage(8)">添加账号</el-button>
             <el-button color="#626aef" plain @click="gotoPage(6)">关于</el-button>
         </div>
     </div>
