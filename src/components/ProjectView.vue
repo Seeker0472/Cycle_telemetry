@@ -1,8 +1,14 @@
 <template>
-  <div class="vidAndMap">
-    <img class="vid" src="../assets/pic.png" alt="">
+  <div class="InfoWrapper">
+    <img class="compo" src="../assets/pic.png" alt="">
     <!-- <img class="map" src="./assets/pic.png" alt=""> -->
-    <MapView class="map" ref="Map" :points="pointList"></MapView>
+    <MapView class="compo" ref="Map" :points="pointList"></MapView>
+
+    <img class="compo" src="../assets/pic.png" alt="">
+    <img class="compo" src="../assets/pic.png" alt="">
+
+    <!-- <img class="map" src="./assets/pic.png" alt=""> -->
+    <!-- <MapView class="map" ref="Map" :points="pointList"></MapView> -->
   </div>
   <!-- <br> -->
   <div class="container">
@@ -141,17 +147,11 @@ export default {
 };
 </script>
 
+
 <style>
 .container {
-  /* width: calc(96vw); */
-  /* 或者 width: 100%; */
-  /* height: 100%; */
   margin: 0 0;
   padding: 0 0;
-  /* display: block; */
-  /* position: relative; */
-  /* justify-content: center; */
-  /* flex-direction: column; */
 
   .timeline {
     height: 200px;
@@ -160,30 +160,24 @@ export default {
   }
 }
 
-.vidAndMap {
-  box-sizing: border-box;
-  height: 300px;
+.InfoWrapper {
+  /* box-sizing: border-box; */
+
+  width: calc(calc(98vw)-8px);
+  padding: 0 1vw;
+  /* height: 300px; */
+  display: flex;
+  /*超出部分换行*/
+  flex-wrap: wrap;
   /* 设置高度 */
 }
 
-.vid {
+.compo {
   width: 50%;
-  height: inherit;
-  /* 设置高度 */
-  float: left;
+  height: 35vh;
+  min-height: 300px;
 }
-
-.map {
-  position: relative;
-  width: 50%;
-  height: inherit;
-  /* 设置高度 */
-  float: right;
-}
-
-/* #app {
-  max-width: 100%;
-  margin: 0 auto;
-  padding: 0vw;
-} */
 </style>
+
+
+

@@ -32,7 +32,7 @@ export default {
         setTimeout(() => {
             this.drawAll();
         }, 1);
-        this.drawAll();
+        // this.drawAll();
     },
 
     methods: {
@@ -302,6 +302,8 @@ export default {
             // canvas.height = window.innerHeight;
             // console.log(canvas.width, canvas.height);
             const element = this.$refs.TimeLine;
+            if (!element)
+                return;
             console.log(element);
             const width = element.offsetWidth;
             const height = element.offsetHeight;

@@ -75,8 +75,8 @@ export default {
 
 <style scoped>
 .Map {
-    min-width: 300px;
-    width: 50%;
-    height: inherit;
+    min-width: 40vw;
+    min-height: 300px;
+
 }
 </style>
