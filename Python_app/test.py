@@ -12,4 +12,8 @@ from db import read_data
 # da = fit.create_fit("TABLE_0")
 # print(da)
 
-xingzhe.get_activity_list()
+# xingzhe.get_activity_list()
+
+import db.Project_page_db as ppdb
+
+ppdb.get_all_info(2)

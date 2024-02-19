@@ -3,7 +3,7 @@ node_modules
 /dist
 Python_app/dist
 Python_app/cache
-/Python_app/build/
+/Python_app/build
 **/__pycache__
 
 *.sqlite

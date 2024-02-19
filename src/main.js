@@ -4,16 +4,18 @@ import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 
-
+//axios
 import axios from 'axios'
 axios.defaults.baseURL = 'http://localhost:5000'
 
 // const { dialog } = require('electron')
 // console.log(dialog.showOpenDialog({ properties: ['openFile', 'multiSelections'] }))
 
+//dayjs
 import dayjs from "dayjs"
 import utc from 'dayjs-plugin-utc'
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore'
+
 dayjs.extend(isSameOrBefore)
 dayjs.extend(utc)
 

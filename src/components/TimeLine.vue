@@ -302,8 +302,11 @@ export default {
             // canvas.height = window.innerHeight;
             // console.log(canvas.width, canvas.height);
             const element = this.$refs.TimeLine;
-            if (!element)
+            if (!element) {
+                console.log('element is null');
+                // window.setTimeout(this.drawAll, 500);
                 return;
+            }
             console.log(element);
             const width = element.offsetWidth;
             const height = element.offsetHeight;

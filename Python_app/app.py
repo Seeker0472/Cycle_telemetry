@@ -5,8 +5,13 @@ import response
 import Service.mp4_gpx_extractor as mp4_gpx_extractor
 import Service.fitphaser as fit_phaser
 import Service.xingzhe as xingzhe
+from flask_socketio import SocketIO, emit
+import db.Project_page_db as Project_page_db
 
 app = Flask(__name__)
+app.config['SECRET_KEY'] = 'secret!'
+socketio = SocketIO(app, cors_allowed_origins='*')
+socketio = SocketIO(app, cors_allowed_origins='*')
 
 
 @app.route('/')
@@ -15,7 +20,7 @@ def hello_world():  # put application's code here
     return 'Hello World!'
 
 
-@app.route('/api/getAllCut', methods=['GET', 'POST'])
+@app.route('/api/getAllCut', methods=['POST'])
 @cross_origin()
 def get_all_cut():
     if request.is_json:
@@ -28,7 +33,7 @@ def get_all_cut():
     return response.fail('Bad Request')
 
 
-@app.route('/api/getFileList', methods=['GET', 'POST'])
+@app.route('/api/getFileList', methods=['POST'])
 @cross_origin()
 def get_all_file_info():
     if request.is_json:
@@ -106,20 +111,35 @@ def add_account():
     return response.fail("Bad Request")
 
 
-#
-# @app.route('/test/<int:test>')
-# def te(test):
-#     return "input" + test
-#
-#
-# @app.route('/test/args')
-# def getarg():
-#     # page=request.args.get("Key", default=1, type=int);
-#     # return f"arg="+page
-#     page = request.args.get("Key", default=1, type=int)
-#     return f"arg={page}"
+@app.route('/api/addFilesToTimeLine', methods=['POST'])
+@cross_origin()
+def add_files_to_timeline():
+    if request.is_json:
+        try:
+            data = request.get_json()
+            time_line_id = data.get('TimeLineID')
+            file_ids = data.get('file_ids')
+            cut_id = data.get('cut_id')
+            print(time_line_id, file_ids, cut_id)
+            add_info_db.add_segments(cut_id, time_line_id, file_ids)
+            return response.success()
+        except Exception as e:
+            return response.fail(str(e))
+    return response.fail("Bad Request")
+
+
+@socketio.on('message', namespace='/test')
+def handle_message(data):
+    print('received message: ' + data)
+    return "Success"
+
+
+@socketio.on('get_all_data', namespace='/test')
+def handle_get_all(data):
+    print(data.get("cutid"))
+    Project_page_db.get_all_info(data.get("cutid"))
+    emit('reset_all', "put data here")
 
 
 if __name__ == '__main__':
-    app.debug = True
-    app.run()
+    socketio.run(app)
