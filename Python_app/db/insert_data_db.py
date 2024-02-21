@@ -149,8 +149,8 @@ def store_mp4_data(data, path, name,comments, units="unitsUndefined"):
     max_id = find_max_id()
     sql = "CREATE TABLE TABLE_" + str(max_id + 1) + "(" + \
           "timestamp DATETIME constraint TABLE_" + str(max_id + 1) + "_pk primary key NOT NULL," + \
-          "latitude DECIMAL(36,30)," + \
-          "longitude DECIMAL(36,30)," + \
+          "position_lat DECIMAL(36,30)," + \
+          "position_long DECIMAL(36,30)," + \
           "altitude DECIMAL(10,2)," + \
           "TwoD_Speed DECIMAL(10,2)," + \
           "ThreeD_Speed DECIMAL(10,2))"
@@ -169,7 +169,7 @@ def store_mp4_data(data, path, name,comments, units="unitsUndefined"):
     cur1.execute(
         "insert into FILE (file_id, record_data_name, data_bind, comments, units" +
         ", type,other_msg, time_start, time_end,file_path,name) " + " values(?,?,?,?,?,?,?,?,?,?,?)",
-        ("TABLE_" + str(max_id + 1), "timestamp&*&latitude&*&longitude&*&altitude&*&TwoD_Speed&*&ThreeD_Speed",
+        ("TABLE_" + str(max_id + 1), "timestamp&*&position_lat&*&position_long&*&altitude&*&TwoD_Speed&*&ThreeD_Speed",
          "0&*&0&*&0&*&0&*&0&*&0", comments, units, 2, "", start_time, end_time, path, name))
     con1.commit()
     con1.close()
@@ -183,8 +183,8 @@ def store_gpx_data(data, path, name,comments, units="unitsUndefined"):
     max_id = find_max_id()
     sql = "create TABLE TABLE_" + str(max_id + 1) + "(" + \
           "timestamp DATETIME constraint TABLE_X_pk primary key NOT NULL," + \
-          "latitude DECIMAL(10,2)," + \
-          "longitude DECIMAL(10,2)," + \
+          "position_lat DECIMAL(10,2)," + \
+          "position_long DECIMAL(10,2)," + \
           "altitude DECIMAL(10,2))"
     cur.execute(sql)
     cur.executemany("INSERT INTO TABLE_" + str(max_id + 1) + " VALUES(?,?,?,?)", data)
@@ -202,7 +202,7 @@ def store_gpx_data(data, path, name,comments, units="unitsUndefined"):
     cur1.execute(
         "insert into FILE (file_id, record_data_name, data_bind, comments, units" +
         ", type,other_msg, time_start, time_end,file_path,name) " + " values(?,?,?,?,?,?,?,?,?,?,?)",
-        ("TABLE_" + str(max_id + 1), "timestamp&*&latitude&*&longitude&*&altitude",
+        ("TABLE_" + str(max_id + 1), "timestamp&*&position_lat&*&position_long&*&altitude",
          "0&*&0&*&0&*&0", comments, units, 3, "", start_time, end_time, path, name))
     con1.commit()
     con1.close()

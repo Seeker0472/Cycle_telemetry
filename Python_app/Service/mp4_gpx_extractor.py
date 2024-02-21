@@ -5,6 +5,7 @@ import gpxpy
 import gpxpy.gpx
 from dateutil import tz
 from pymediainfo import MediaInfo
+from datetime import datetime
 
 
 def extract_mp4(file_path, name, comments=""):
@@ -16,11 +17,13 @@ def extract_mp4(file_path, name, comments=""):
     gps_data = list(map(gpmf.gps.parse_gps_block, gps_blocks))
     data = []
     for row in gps_data:
-        data.append((row.timestamp, round(np.mean(row.latitude), 7), round(np.mean(row.longitude), 7),
+        data.append((datetime.strptime(row.timestamp, '%Y-%m-%d %H:%M:%S.%f').strftime('%Y-%m-%dT%H:%M:%SZ'),
+                     round(np.mean(row.latitude), 7),
+                     round(np.mean(row.longitude), 7),
                      round(np.mean(row.altitude), 2),
                      round(np.mean(row.speed_2d), 2), round(np.mean(row.speed_3d), 2)))
 
-    return read_data_db.store_mp4_data(data, file_path, name, comments)
+    return insert_data_db.store_mp4_data(data, file_path, name, comments)
 
 
 def get_mp4_start_end(file_path, enforce=0):
@@ -35,7 +38,7 @@ def get_mp4_start_end(file_path, enforce=0):
     return startend
 
 
-def read_gpx(file_path, name,comments):
+def read_gpx(file_path, name, comments):
     gpx_file = open(file_path, 'r', encoding='utf-8')
 
     gpx = gpxpy.parse(gpx_file)
@@ -59,4 +62,4 @@ def read_gpx(file_path, name,comments):
         for point in route.points:
             print(f'Point at ({point.latitude},{point.longitude}) -> {point.elevtion}')
 
-    read_data_db.store_gpx_data(tracks, file_path, name,comments)
+    read_data_db.store_gpx_data(tracks, file_path, name, comments)

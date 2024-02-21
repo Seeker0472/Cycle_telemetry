@@ -12,8 +12,15 @@ from db import read_data
 # da = fit.create_fit("TABLE_0")
 # print(da)
 
-# xingzhe.get_activity_list()
+# import sqlite3
+#
+# conn = sqlite3.connect('data.sqlite')
+# cur = conn.cursor()
+# data=cur.execute("select * from TABLE_3").fetchall()
+# print(data)
 
+# xingzhe.get_activity_list()
+#
 import db.Project_page_db as ppdb
 
 ppdb.get_all_info(2)
