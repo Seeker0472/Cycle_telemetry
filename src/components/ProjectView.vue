@@ -9,7 +9,7 @@
   <div class="container">
     <div class="timeShow">当前时间：{{ showTime3 }}</div>
     <div class="timeLine">
-      <TimeLine class="timeline" ref="TimeLine" :rectangles="rectangles" :timelineEvents="timelineEvents" aqaqAQaqAQaqaq
+      <TimeLine class="timeline" ref="TimeLine" :rectangles="rectangles" :TimeLineData="TimeLineData"
         @timeNow="displayTime">
       </TimeLine>
     </div>
@@ -26,11 +26,18 @@ import MapView from './MapView.vue';
 import allDataWindow from './all_data_window.vue'
 import { socket, state } from "@/socket";
 
+import { ref } from 'vue'
+
+const TimeLineData = ref({})
+const PointList = ref([])
+
 socket.on('reset_all', (data) => {
   console.log('reset_all');
-  console.log(data);
-
-});
+  let json = JSON.parse(data);
+  TimeLineData.value = json.TimeLine;
+  PointList.value = json.Map.PointsList;
+  console.log(json);
+})
 export default {
   components: {
     TimeLine,
@@ -43,35 +50,31 @@ export default {
       default: ''
     }
   },
+  setup() {
+    return {
+      TimeLineData: TimeLineData,
+      pointList: PointList,
+    }
+  },
   data() {
     return {
-      showTime3: '12',
-      timelineEvents: [
-        {
-          id: 1,
-          title: "Event 1",
-          line: 1,
-          timestart: "2024-01-13T05:39:30.100Z",
-          timeend: "2024-01-13T05:50:30.000Z",
-          description: "Description of event 1"
-        }
-      ],
+      // TimeLineData: TimeLineData,
       rectangles: [
         { x: 10, y: 20, width: 100, height: 50, color: 'blue' },
         { x: 150, y: 75, width: 200, height: 100, color: 'red' },
         { x: 400, y: 150, width: 150, height: 75, color: 'green' }
       ],
-      pointList: [
-        { lng: 116.399, lat: 39.910 },
-        { lng: 116.405, lat: 39.920 },
-        { lng: 116.425, lat: 39.900 }
-      ],
+      // pointList: [
+      //   { lng: 116.399, lat: 39.910 },
+      //   { lng: 116.405, lat: 39.920 },
+      //   { lng: 116.425, lat: 39.900 }
+      // ],
     };
   },
   methods: {
     triggerChildMethod() {
       // 使用this.$refs来访问子组件实例，并调用子组件的方法
-      this.$refs.TimeLine.draw();
+      this.$refs.TimeLine.drawAll();
     },
     displayTime(time) {
       this.showTime3 = time;
@@ -87,6 +90,9 @@ export default {
       console.log('redy to get data');
       socket.emit('get_all_data', { "cutid": this.$props.cutid }, (err, data) => {
         console.log(data);
+        this.$refs.TimeLine.drawAll();
+        this.$refs.Map.initMap();
+
       });
 
     }

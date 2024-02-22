@@ -24,14 +24,14 @@ export default {
     },
     name: 'TimeLine',
     props: {
-        timelineEvents: [],
+        TimeLineData: {},
         rectangles: [],
     },
     mounted() {
         //延时绘制
-        setTimeout(() => {
-            this.drawAll();
-        }, 1);
+        // setTimeout(() => {
+        //     this.drawAll();
+        // }, 1);
         // this.drawAll();
     },
 
@@ -133,15 +133,16 @@ export default {
         },
         //获取第一个和最后一个时间和持续时间长度(分钟)
         getFirstLast() {
-            let first = this.timelineEvents[0].timestart;
-            let last = this.timelineEvents[0].timeend;
+            console.log(this.TimeLineData);
+            let first = this.TimeLineData.segments[0].time_start;
+            let last = this.TimeLineData.segments[0].time_end;
             let length = 0;
-            this.timelineEvents.forEach(element => {
-                if (this.$dayjs(element.timestart).isBefore(first)) {
-                    first = element.timestart;
+            this.TimeLineData.segments.forEach(element => {
+                if (this.$dayjs(element.time_start).isBefore(first)) {
+                    first = element.time_start;
                 }
-                if (this.$dayjs(element.timeend).isAfter(last)) {
-                    last = element.timeend;
+                if (this.$dayjs(element.time_end).isAfter(last)) {
+                    last = element.time_end;
                 }
             });
             //取整点(开始向下取整,结束向上取整)
@@ -258,10 +259,11 @@ export default {
             var canvas = document.getElementById("canvas");
             var ctx = canvas.getContext("2d");
 
-            this.timelineEvents.forEach(element => {
+            this.TimeLineData.segments.forEach(element => {
                 ctx.fillStyle = "rgb(200,0,0)";
-                ctx.fillRect((this.$dayjs(element.timestart).diff(this.begin) - this.offsetMilliSec) / this.scale + this.pivot, canvas.height / 10 * element.line + 2, this.$dayjs(element.timeend).diff(element.timestart) / this.scale, canvas.height / 11);
-                console.log("scale" + this.scale + "offsetMilliSec" + this.offsetMilliSec + "pivot" + this.pivot + "start" + (this.$dayjs(element.timestart).diff(this.begin) - this.offsetMilliSec) / this.scale + this.pivot + "end" + (this.$dayjs(element.timeend).diff(this.begin) - this.offsetMilliSec) / this.scale + this.pivot);
+                // console.log((this.$dayjs(element.time_start).diff(this.begin) - this.offsetMilliSec) / this.scale + this.pivot, canvas.height / 10 * element.line + 2);
+                ctx.fillRect((this.$dayjs(element.time_start).diff(this.begin) - this.offsetMilliSec) / this.scale + this.pivot, canvas.height / 10 * element.row_id + 2, this.$dayjs(element.time_end).diff(element.time_start) / this.scale, canvas.height / 11);
+                console.log("scale" + this.scale + "offsetMilliSec" + this.offsetMilliSec + "pivot" + this.pivot + "start" + (this.$dayjs(element.time_start).diff(this.begin) - this.offsetMilliSec) / this.scale + this.pivot + "end" + (this.$dayjs(element.time_end).diff(this.begin) - this.offsetMilliSec) / this.scale + this.pivot);
             });
 
         },

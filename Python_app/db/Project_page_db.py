@@ -1,7 +1,8 @@
 from sqlalchemy.orm import declarative_base
 from sqlalchemy import create_engine, text, Column, Integer, String, TEXT, MetaData
 from sqlalchemy.orm import sessionmaker
-import datetime
+import datetime, json
+from gps_phaser import coordTransform_utils as ctu
 
 main = create_engine('sqlite:///main.sqlite', echo=True)
 data = create_engine('sqlite:///data.sqlite', echo=True)
@@ -29,13 +30,31 @@ class Segment(Base):
     time_start = Column(String)
     time_end = Column(String)
 
+    # def __repr__(self):
+    #     return (
+    #         "<Segment(segment_id='%s', time_offset='%s', start_offset='%s', end_offset='%s', file_id='%s', "
+    #         "CUT_id='%s', row_id='%s', name='%s', time_start='%s', time_end='%s')>") % (
+    #         self.segment_id, self.time_offset, self.start_offset, self.end_offset, self.file_id, self.CUT_id,
+    #         self.row_id, self.name, self.time_start, self.time_end)
+    def __str__(self):
+        return json.dumps(dict(self), ensure_ascii=False)
+
     def __repr__(self):
-        return (
-            "<Segment(segment_id='%s', time_offset='%s', start_offset='%s', end_offset='%s', file_id='%s', "
-            "CUT_id='%s', row_id='%s', name='%s', time_start='%s', time_end='%s')>") % (
-            self.segment_id, self.time_offset, self.start_offset, self.end_offset, self.file_id, self.CUT_id, self.row_id, self.name, self.time_start, self.time_end)
+        return self.__str__()
 
-
+    def to_dict(self):
+        return {
+            "segment_id": self.segment_id,
+            "time_offset": self.time_offset,
+            "start_offset": self.start_offset,
+            "end_offset": self.end_offset,
+            "file_id": self.file_id,
+            "CUT_id": self.CUT_id,
+            "row_id": self.row_id,
+            "name": self.name,
+            "time_start": self.time_start,
+            "time_end": self.time_end
+        }
 
 
 # Data_Bind的类
@@ -62,8 +81,9 @@ def get_all_info(cutid):
 
     # 先查询这个cut有哪些Segments
     segments = session.query(Segment).from_statement(
-        text("select  segment_id, time_offset, start_offset, end_offset, FILE.file_id, CUT_id, row_id,name,time_start,time_end "
-             " from Segment   join FILE on Segment.file_id = FILE.file_id and CUT_id= " + str(cutid))).all()
+        text(
+            "select  segment_id, time_offset, start_offset, end_offset, FILE.file_id, CUT_id, row_id,name,time_start,time_end "
+            " from Segment   join FILE on Segment.file_id = FILE.file_id and CUT_id= " + str(cutid))).all()
     # 获取cut的基本信息,和Segments一样来初始化TimeLine
     cutinfo = session.execute(
         text("SELECT Cur_pos,in_point,out_point FROM CUT WHERE cut_id = " + str(cutid))).fetchone()
@@ -73,10 +93,11 @@ def get_all_info(cutid):
         raise Exception("No such cut id")
     # 封装
     result['TimeLine'] = {}
-    result['TimeLine']['Cur_pos'] = current_pos = datetime.datetime.strptime(cutinfo[0], '%Y-%m-%dT%H:%M:%SZ')
+    result['TimeLine']['Cur_pos'] = cutinfo[0]  # datetime.datetime.strptime(cutinfo[0], '%Y-%m-%dT%H:%M:%SZ')
+    current_pos = datetime.datetime.strptime(cutinfo[0], '%Y-%m-%dT%H:%M:%SZ')
     result['TimeLine']['in_point'] = cutinfo[1]  # in_point
     result['TimeLine']['out_point'] = cutinfo[2]  # out_point
-    result['TimeLine']['segments'] = segments
+    result['TimeLine']['segments'] = [item.to_dict() for item in segments]
 
     # 获取所有数据绑定的信息,并缓存在全局变量里面
     bind_info = bind = session.execute(
@@ -126,21 +147,28 @@ def get_all_info(cutid):
     for items in segments:
         files.add(items.file_id)
     for items in files:
-        result['Map']['PointsList'][items] = session_data.execute(
+        res = session_data.execute(
             text(
-                "WITH NumberedRows AS (SELECT *,ROW_NUMBER() OVER (ORDER BY timestamp ) AS rn FROM " + items + ")SELECT * FROM NumberedRows "
-                                                                                                               "WHERE rn % 5 = 1")).fetchall() # 这里跳过了一些数据,减轻前端的压力
+                "WITH NumberedRows AS (SELECT position_long,position_lat,ROW_NUMBER() OVER (ORDER BY timestamp ) AS rn FROM " + items + ")SELECT * FROM NumberedRows "
+                                                                                                               "WHERE rn % 5 = 1")).fetchall()  # 这里跳过了一些数据,减轻前端的压力
+        result['Map']['PointsList'][items] = [ctu.wgs84_to_bd09((180.0 / (2.0**31.0))*item[0],(180.0 / (2.0**31.0))*item[1])for item in res]
 
     # 获取所有时间轴的当前位置信息
     result['Map']['Pos'] = []
     for items in segments:
-        if datetime.datetime.strptime(items.time_start, '%Y-%m-%dT%H:%M:%SZ').timestamp() + items.start_offset < current_pos.timestamp() - items.time_offset < datetime.datetime.strptime(items.time_end,
-                                                                                 '%Y-%m-%dT%H:%M:%SZ').timestamp() - items.end_offset:
+        if datetime.datetime.strptime(items.time_start,
+                                      '%Y-%m-%dT%H:%M:%SZ').timestamp() + items.start_offset < current_pos.timestamp() - items.time_offset < datetime.datetime.strptime(
+            items.time_end,
+            '%Y-%m-%dT%H:%M:%SZ').timestamp() - items.end_offset:
             target_time = (current_pos - datetime.timedelta(seconds=items.time_offset)).strftime('%Y-%m-%dT %H:%M:%SZ')
-            info=session_data.execute(
-                text("SELECT position_lat,position_long FROM " + items.file_id + " WHERE timestamp > '" + str(target_time) + "' order by timestamp asc")).fetchone()
+            info = session_data.execute(
+                text("SELECT position_lat,position_long FROM " + items.file_id + " WHERE timestamp > '" + str(
+                    target_time) + "' order by timestamp asc")).fetchone()
             result['Map']['Pos'].append({
                 'segment_id': items.segment_id,
                 'name': items.name,
                 'position': [info[0], info[1]]
             })
+    session.close()
+    session_data.close()
+    return result

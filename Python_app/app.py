@@ -1,3 +1,5 @@
+import json
+
 from flask import Flask, request, jsonify
 from flask_cors import CORS, cross_origin
 from db import get_info_db, add_info_db
@@ -137,8 +139,8 @@ def handle_message(data):
 @socketio.on('get_all_data', namespace='/test')
 def handle_get_all(data):
     print(data.get("cutid"))
-    Project_page_db.get_all_info(data.get("cutid"))
-    emit('reset_all', "put data here")
+    result=Project_page_db.get_all_info(data.get("cutid"))
+    emit('reset_all', json.dumps(result))
 
 
 if __name__ == '__main__':

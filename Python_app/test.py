@@ -1,3 +1,5 @@
+import json
+
 from Service import mp4_gpx_extractor, fitphaser, fit, xingzhe
 from db import read_data
 
@@ -23,4 +25,6 @@ from db import read_data
 #
 import db.Project_page_db as ppdb
 
-ppdb.get_all_info(2)
+result=ppdb.get_all_info(2)
+print(json.dumps(result))
+print("done")
