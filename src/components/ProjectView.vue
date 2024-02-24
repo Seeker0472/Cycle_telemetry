@@ -1,21 +1,21 @@
 <template>
   <allDataWindow ref="addData" :cutid="cutid"></allDataWindow>
   <div class="InfoWrapper">
-    <img class="compo" src="../assets/pic.png" alt="">
+    <vidView class="compo" :cutid="cutid"></vidView>
     <MapView class="compo" ref="Map" :points="pointList"></MapView>
-    <img class="compo" src="../assets/pic.png" alt="">
-    <img class="compo" src="../assets/pic.png" alt="">
+    <Data_Bind class="compo" ref="DataBind" :dataBind="DataBindValue" :time="TimeNow" :cutid="cutid"></Data_Bind>
+    <detailedDataTable class="compo" :cutid="cutid"></detailedDataTable>
   </div>
   <div class="container">
-    <div class="timeShow">当前时间：{{ showTime3 }}</div>
+    <div class="timeShow">当前时间：{{ TimeNow }}</div>
     <div class="timeLine">
       <TimeLine class="timeline" ref="TimeLine" :rectangles="rectangles" :TimeLineData="TimeLineData"
         @timeNow="displayTime">
       </TimeLine>
     </div>
   </div><br>
-  <el-button @click="triggerChildMethod" type="primary">Primary</el-button>
-  <el-button @click="openDialog" type="primary">GetFilePath</el-button>
+  <el-button @click="this.$refs.DataBind.print()" type="primary">Primary</el-button>
+  <!-- <el-button @click="openDialog" type="primary">GetFilePath</el-button> -->
   <el-button @click="openDataDialog" type="primary">导入记录</el-button>
 </template>
 
@@ -25,50 +25,61 @@ import TimeLine from './TimeLine.vue';
 import MapView from './MapView.vue';
 import allDataWindow from './all_data_window.vue'
 import { socket, state } from "@/socket";
+import Data_Bind from './Data_Bind.vue';
+import detailedDataTable from './detailedDataTable.vue';
+import vidView from './vidView.vue';
 
 import { ref } from 'vue'
 
 const TimeLineData = ref({})
 const PointList = ref([])
+const DataBindValue = ref({})
 
 socket.on('reset_all', (data) => {
-  console.log('reset_all');
   let json = JSON.parse(data);
   TimeLineData.value = json.TimeLine;
   PointList.value = json.Map.PointsList;
+  DataBindValue.value = json.DataBind;
+  // this.$refs.DataBind.updateData(json.DataBind);
+
+  console.log(json);
+})
+socket.on('reset_data_Bind', (data) => {
+  let json = JSON.parse(data);
+  DataBindValue.value = json;
+  // this.$refs.DataBind.updateData(json);
   console.log(json);
 })
 export default {
   components: {
     TimeLine,
     MapView,
-    allDataWindow
+    allDataWindow,
+    Data_Bind,
+    detailedDataTable,
+    vidView,
   },
   props: {
     cutid: {
-      type: String,
-      default: ''
+      type: Number,
+      default: -1
     }
   },
   setup() {
     return {
       TimeLineData: TimeLineData,
       pointList: PointList,
+      DataBindValue: DataBindValue,
     }
   },
   data() {
     return {
-      // TimeLineData: TimeLineData,
+      TimeNow: '',
       rectangles: [
         { x: 10, y: 20, width: 100, height: 50, color: 'blue' },
         { x: 150, y: 75, width: 200, height: 100, color: 'red' },
         { x: 400, y: 150, width: 150, height: 75, color: 'green' }
       ],
-      // pointList: [
-      //   { lng: 116.399, lat: 39.910 },
-      //   { lng: 116.405, lat: 39.920 },
-      //   { lng: 116.425, lat: 39.900 }
-      // ],
     };
   },
   methods: {
@@ -77,7 +88,8 @@ export default {
       this.$refs.TimeLine.drawAll();
     },
     displayTime(time) {
-      this.showTime3 = time;
+      // console.log('displayTime', time);
+      this.TimeNow = time;
     },
     openDataDialog() {
       this.$refs.addData.openDialog();
@@ -87,7 +99,6 @@ export default {
   },
   mounted() {
     if (state.connected === 1) {
-      console.log('redy to get data');
       socket.emit('get_all_data', { "cutid": this.$props.cutid }, (err, data) => {
         console.log(data);
         this.$refs.TimeLine.drawAll();

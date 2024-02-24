@@ -6,8 +6,8 @@ from math import floor
 from db import read_data
 
 
-def create_fit(table_name, path="./cache/activity.fit"):
-    data = read_data.read_fit(table_name)
+def create_fit(data, path="./cache/activity.fit"):
+    # data = read_data.read_fit(table_name)
     with open(path, 'bw') as f:
         fit = FitEncode(buffer=f)
         file_id = messages.FileId()
@@ -226,7 +226,6 @@ def create_fit(table_name, path="./cache/activity.fit"):
             event_type=9,
             local_timestamp=ts1,
             event_group=0,
-
         ))
 
         fit.finish()

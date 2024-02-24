@@ -23,8 +23,11 @@ from db import read_data
 
 # xingzhe.get_activity_list()
 #
-import db.Project_page_db as ppdb
-
-result=ppdb.get_all_info(2)
-print(json.dumps(result))
-print("done")
+# import db.Project_page_db as ppdb
+#
+# result=ppdb.get_all_info(2)
+# print(json.dumps(result))
+# print("done")
+res=read_data.read_total_cut(2)
+# print(json.dumps(res))
+fit.create_fit(res)

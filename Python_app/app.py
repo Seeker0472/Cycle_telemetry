@@ -139,8 +139,29 @@ def handle_message(data):
 @socketio.on('get_all_data', namespace='/test')
 def handle_get_all(data):
     print(data.get("cutid"))
-    result=Project_page_db.get_all_info(data.get("cutid"))
+    result = Project_page_db.get_all_info(data.get("cutid"))
     emit('reset_all', json.dumps(result))
+
+
+@socketio.on('get_datasource', namespace='/test')
+def handle_get_datasource(data):
+    print(data)
+    result = Project_page_db.get_datasource(data.get("cut_id"), data.get("time"))
+    emit('reset_datasource', json.dumps(result))
+
+
+@socketio.on('updateTime', namespace='/test')
+def handle_update_cur_time(data):
+    print(data)
+    result = Project_page_db.update_cur_pos_time(data.get("cut_id"), data.get("time"))
+    emit('reset_data_Bind', json.dumps(result['DataBind']))
+
+
+@socketio.on('bindData', namespace='/test')
+def handle_bind_data(data):
+    print(data)
+    result = Project_page_db.bind_data(data.get("segment_id"), data.get("data_id"), data.get("heading_name"),data.get("time"))
+    emit('reset_data_Bind', json.dumps(result['DataBind']))
 
 
 if __name__ == '__main__':

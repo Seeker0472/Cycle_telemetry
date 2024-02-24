@@ -119,7 +119,7 @@ def get_all_info(cutid):
             # 如果数据表不在缓存中,则查找数据并加入缓存
             if items[3] not in data_cache:
                 data_cache[items[3]] = {}
-                target_time = (current_pos - datetime.timedelta(seconds=items[9])).strftime('%Y-%m-%dT %H:%M:%SZ')
+                target_time = (current_pos - datetime.timedelta(seconds=items[9])).strftime('%Y-%m-%dT%H:%M:%SZ')
                 obj = session_data.execute(text(
                     "SELECT * FROM " + items[
                         3] + " WHERE timestamp > '" + target_time + "' order by timestamp asc"))
@@ -150,8 +150,9 @@ def get_all_info(cutid):
         res = session_data.execute(
             text(
                 "WITH NumberedRows AS (SELECT position_long,position_lat,ROW_NUMBER() OVER (ORDER BY timestamp ) AS rn FROM " + items + ")SELECT * FROM NumberedRows "
-                                                                                                               "WHERE rn % 5 = 1")).fetchall()  # 这里跳过了一些数据,减轻前端的压力
-        result['Map']['PointsList'][items] = [ctu.wgs84_to_bd09((180.0 / (2.0**31.0))*item[0],(180.0 / (2.0**31.0))*item[1])for item in res]
+                                                                                                                                        "WHERE rn % 5 = 1")).fetchall()  # 这里跳过了一些数据,减轻前端的压力
+        result['Map']['PointsList'][items] = [
+            ctu.wgs84_to_bd09((180.0 / (2.0 ** 31.0)) * item[0], (180.0 / (2.0 ** 31.0)) * item[1]) for item in res]
 
     # 获取所有时间轴的当前位置信息
     result['Map']['Pos'] = []
@@ -160,7 +161,7 @@ def get_all_info(cutid):
                                       '%Y-%m-%dT%H:%M:%SZ').timestamp() + items.start_offset < current_pos.timestamp() - items.time_offset < datetime.datetime.strptime(
             items.time_end,
             '%Y-%m-%dT%H:%M:%SZ').timestamp() - items.end_offset:
-            target_time = (current_pos - datetime.timedelta(seconds=items.time_offset)).strftime('%Y-%m-%dT %H:%M:%SZ')
+            target_time = (current_pos - datetime.timedelta(seconds=items.time_offset)).strftime('%Y-%m-%dT%H:%M:%SZ')
             info = session_data.execute(
                 text("SELECT position_lat,position_long FROM " + items.file_id + " WHERE timestamp > '" + str(
                     target_time) + "' order by timestamp asc")).fetchone()
@@ -172,3 +173,93 @@ def get_all_info(cutid):
     session.close()
     session_data.close()
     return result
+
+
+def get_datasource(cut_id, time):
+    session = Session()
+    res = session.execute(text('select segment_id,name,record_data_name,F.file_id from Segment join main.FILE F'
+                               ' on Segment.file_id = F.file_id and CUT_id= ' + str(cut_id) +
+                               " where time_start < '" + time + "' and time_end > '" + time + "'")).fetchall()
+    data = []
+    for items in res:
+        child_nodes = []
+        child = items[2].split("&*&"),
+        for item in child[0]:
+            child_nodes.append({
+                "name": item,
+                "leaf": True,
+                "value": str(items[0]) + '/' + item,
+                "file_id": str(items[0]) + '/' + item,
+            })
+        data.append({
+            # "segment_id": items[0],
+            "name": items[1],
+            "file_id": items[3],
+            "children": child_nodes,
+            "leaf": False,
+        })
+    session.close()
+    print(data)
+    return data
+
+
+def update_cur_pos_time(cut_id, time):
+    print(time)
+    # time = datetime.datetime.strptime(time, '%Y-%m-%dT%H:%M:%SZ')
+    print(time)
+    global bind_info
+    session = Session()
+    session.execute(text("update CUT set Cur_pos = '" + str(time) + "' where cut_id = '" + str(cut_id) + "'"))
+    session.commit()
+    result = {'DataBind': {}}
+    data_cache = {}
+    session_data = SessionData()
+    time = datetime.datetime.strptime(time, '%Y-%m-%dT%H:%M:%SZ')
+    for items in bind_info:  # dataid是绑定数据的类型(心率等)
+        print(time.timestamp())
+
+        # 如果指定数据的时间范围包含当前时间,则查找数据
+        if datetime.datetime.strptime(items[5], '%Y-%m-%dT%H:%M:%SZ').timestamp() + items[
+            7] < time.timestamp() - items[9] < datetime.datetime.strptime(items[6],
+                                                                          '%Y-%m-%dT%H:%M:%SZ').timestamp() - \
+                items[8]:
+            # 如果数据表不在缓存中,则查找数据并加入缓存
+            if items[3] not in data_cache:
+                data_cache[items[3]] = {}
+                target_time = (time - datetime.timedelta(seconds=items[9])).strftime('%Y-%m-%dT%H:%M:%SZ')
+                obj = session_data.execute(text(
+                    "SELECT * FROM " + items[
+                        3] + " WHERE timestamp > '" + target_time + "' order by timestamp asc"))
+                data_cache[items[3]]['data'] = obj.fetchone()
+                data_cache[items[3]]['column_names'] = obj.keys()
+
+            result['DataBind'][items[1]] = {
+                'id': items[0],
+                'segment_id': items[10],
+                'heading_name': items[2],
+                'file_name': items[4],
+                'data': data_cache[items[3]]['data'][list(data_cache[items[3]]['column_names']).index(items[2])],
+            }
+    session.close()
+    session_data.close()
+    return result
+
+
+def bind_data(segment_id, data_id, heading_name, time):
+    # print(segment_id, data_id, heading_name, time)
+    global bind_info
+    session = Session()
+    session.execute(text(
+        "insert into Data_Bind(segment_id,data_id,heading_name) values('" + str(segment_id) + "','" + str(
+            data_id) + "','" + heading_name + "')"))
+    session.commit()
+    cutid = session.execute(text("select CUT_id from Segment where segment_id = " + str(segment_id))).fetchone()[0]
+    # 获取所有数据绑定的信息,并缓存在全局变量里面
+    bind_info = session.execute(
+        text(
+            "SELECT id,data_id,heading_name,S.file_id,name,time_start,time_end,S.start_offset,S.end_offset,time_offset, S.segment_id ,F.file_id "
+            " FROM Data_Bind join main.Segment S on Data_Bind.segment_id = S.segment_id and cut_id = " + str(
+                cutid) +
+            " join FILE F on S.file_id = F.file_id")).fetchall()
+    session.close()
+    return update_cur_pos_time(cutid, time)

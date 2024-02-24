@@ -4,9 +4,9 @@
         @touchcancel="mouseLeave">
 
     </canvas>
-    <!-- <div>111</div> -->
 </template>
 <script>
+import { socket } from "@/socket";
 export default {
     data() {
         return {
@@ -20,6 +20,9 @@ export default {
             offSetY: 0,
             screenPixelRatio: 1,
             EntryExitMilliSec: [0, 1],
+            selected_segment_id: -1,
+            selected_file_id: -1,
+            timeout: null,
         };
     },
     name: 'TimeLine',
@@ -49,6 +52,13 @@ export default {
 
         drawAll() {//画出所有东西
             this.$emit('timeNow', this.$dayjs(this.begin).add(this.offsetMilliSec, 'millisecond').toDate());
+            clearTimeout(this.timeout);
+            this.timeoout = setTimeout(() => {
+                socket.emit('updateTime', {
+                    time: this.$dayjs(this.begin).add(this.offsetMilliSec, 'millisecond').format('YYYY-MM-DDTHH:mm:ss[Z]'),
+                    cut_id: this.$props.cutid
+                });
+            }, 20);
             this.setWidthHeight();
             window.addEventListener('resize', this.drawAll);
             this.drawTimeLine(this.offsetMilliSec, this.pivot);
@@ -89,13 +99,29 @@ export default {
             }
             //点击了时间轴,暂时什么都不做
             else {
+                let isObject = false;
                 console.log("click on TimeLine");
+                console.log(this.TimeLineData);
+                this.TimeLineData.segments.forEach(element => {
+                    if (y > canvas.height / 10 * element.row_id && y < canvas.height / 10 * (element.row_id + 1)) {
+                        if (x > (this.$dayjs(element.time_start).diff(this.begin) - this.offsetMilliSec) / this.scale + this.pivot && x < (this.$dayjs(element.time_end).diff(this.begin) - this.offsetMilliSec) / this.scale + this.pivot) {
+                            console.log("click on Object" + element.segment_id);
+                            this.selected_segment_id = element.segment_id;
+                            this.selected_file_id = element.file_id;
+                            isObject = true;
+                        }
+                    }
+                });
+                if (!isObject) {
+                    this.selected_segment_id = -1;
+                    this.selected_file_id = -1;
+                }
+                this.drawAll();
             }
         },
         mouseMove(evt) {
             let x = evt.offsetX;
             // let y = evt.offsetY;
-            // console.log(evt.movementX, evt.offsetX);
             // let px = x - this.mousePos[0];
             if (this.drag != 0) {
                 switch (this.drag) {
@@ -107,7 +133,7 @@ export default {
                     case 2:
                         //拖动时间线
                         this.jumpToTargetPivot(x - 40);
-                        console.log("drag timeLine" + x);
+                        // console.log("drag timeLine" + x);
                         break;
                     case 3:
                         //拖动左边的时间轴序号
@@ -115,7 +141,6 @@ export default {
                         break;
                 }
                 // this.mousePos = [evt.clientX, evt.clientY];
-                console.log("mousemove" + this.mousePos);
                 // this.jumpToTargetPivot(this.pivot + this.mousePos[0] - this.mousePos[0]);
             }
         },
@@ -133,7 +158,6 @@ export default {
         },
         //获取第一个和最后一个时间和持续时间长度(分钟)
         getFirstLast() {
-            console.log(this.TimeLineData);
             let first = this.TimeLineData.segments[0].time_start;
             let last = this.TimeLineData.segments[0].time_end;
             let length = 0;
@@ -153,11 +177,9 @@ export default {
                 last = last.add(1, 'hour').startOf('hour');
             }
             this.end = last;
-            console.log(this.begin.toDate(), this.end.toDate(), this.end.diff(this.begin));
             //以毫秒为单位
             this.length = length = this.end.diff(this.begin);
             this.EntryExitMilliSec[1] = length;
-            // console.log(first, last, length);
             return [first, last];
         },
         //画出时间轴
@@ -172,13 +194,12 @@ export default {
             this.drawTimeLineContainer();
 
             pivot += 40;
-            // begin = begin - begin % 30;
             this.getFirstLast();
 
             ctx.fillStyle = "rgb(40,40,40)";
             ctx.fillRect(0, 0, canvas.width, canvas.height / 10);
+            // console.log(this.offsetMilliSec, this.scale, this.pivot, this.begin, this.end, this.length, offsetSec, pivot)
 
-            console.log(this.length);
             for (let i = 0; i <= this.length; i += 60000 * 30) {//每30分钟循环一次
                 ctx.beginPath();
                 this.drawLine((i - offsetSec) / this.scale + pivot, 0, (i - offsetSec) / this.scale + pivot, canvas.height / 10, 1, '#fff');
@@ -218,7 +239,6 @@ export default {
             ctx.fillStyle = "rgb(40,40,40)";
             ctx.fillRect(0, canvas.height / 10, 40, canvas.height);
             for (let i = 0; i < times + 1; i++) {
-                // ctx.fillRect(40+this.scale*60*i, canvas.height / 10, 60*this.scale, canvas.height);
                 this.drawLine(0, canvas.height / 10 * (i + 1) + this.offSetY, canvas.width, canvas.height / 10 * (i + 1) + this.offSetY, 1, '#fff');
             }
             for (let i = 0; i < times; i++) {
@@ -246,13 +266,10 @@ export default {
         },
         moveTimeLine(px) {
             if (this.pivot <= 0 && px < 0) {
-                // this.pivot = 0;
                 this.offsetMilliSec -= px * this.scale;
-                console.log("offsetMilliSec" + this.offsetMilliSec);
             } else {
                 this.pivot += px;
             }
-            // this.offsetSec += px / this.scale;
             this.drawAll();
         },
         drawTimeLineObject() {
@@ -260,20 +277,23 @@ export default {
             var ctx = canvas.getContext("2d");
 
             this.TimeLineData.segments.forEach(element => {
-                ctx.fillStyle = "rgb(200,0,0)";
-                // console.log((this.$dayjs(element.time_start).diff(this.begin) - this.offsetMilliSec) / this.scale + this.pivot, canvas.height / 10 * element.line + 2);
-                ctx.fillRect((this.$dayjs(element.time_start).diff(this.begin) - this.offsetMilliSec) / this.scale + this.pivot, canvas.height / 10 * element.row_id + 2, this.$dayjs(element.time_end).diff(element.time_start) / this.scale, canvas.height / 11);
-                console.log("scale" + this.scale + "offsetMilliSec" + this.offsetMilliSec + "pivot" + this.pivot + "start" + (this.$dayjs(element.time_start).diff(this.begin) - this.offsetMilliSec) / this.scale + this.pivot + "end" + (this.$dayjs(element.time_end).diff(this.begin) - this.offsetMilliSec) / this.scale + this.pivot);
+                if (this.selected_segment_id == element.segment_id)
+                    ctx.fillStyle = "rgb(0,200,0)";
+                else
+                    ctx.fillStyle = "rgb(200,0,0)";
+                ctx.fillRect((this.$dayjs(element.time_start).diff(this.begin) - this.offsetMilliSec) / this.scale + this.pivot + 40, canvas.height / 10 * element.row_id + 2, this.$dayjs(element.time_end).diff(element.time_start) / this.scale, canvas.height / 11);
             });
 
         },
         drawEntryExitPoint() {
             var canvas = document.getElementById("canvas");
             var ctx = canvas.getContext("2d");
-            let startpx = (this.EntryExitMilliSec[0] - this.offsetMilliSec) / this.scale + this.pivot + 40;
-            let endpx = (this.EntryExitMilliSec[1] - this.offsetMilliSec) / this.scale + this.pivot + 40;
+            // let startpx = (this.EntryExitMilliSec[0] - this.offsetMilliSec) / this.scale + this.pivot + 40;
+            // let endpx = (this.EntryExitMilliSec[1] - this.offsetMilliSec) / this.scale + this.pivot + 40;
+            let startpx = (this.$dayjs(this.$props.TimeLineData.in_point).diff(this.begin) - this.offsetMilliSec) / this.scale + this.pivot + 40;
+            let endpx = (this.$dayjs(this.$props.TimeLineData.out_point).diff(this.begin) - this.offsetMilliSec) / this.scale + this.pivot + 40;
+            console.log("startpx", this.begin, this.$props.TimeLineData.in_point);
             ctx.fillStyle = "rgb(40,40,40)";
-            console.log("ca" + canvas.height);
             ctx.fillRect(0, canvas.height / this.screenPixelRatio * 9 / 10, canvas.width, canvas.height / this.screenPixelRatio / 10);
             ctx.fillStyle = "rgb(230, 230, 230)";
             ctx.fillRect(startpx, canvas.height / this.screenPixelRatio * 9 / 10, endpx - startpx, canvas.height / this.screenPixelRatio / 10);
@@ -302,16 +322,14 @@ export default {
             var context = canvas.getContext("2d");
             // canvas.width = window.innerWidth;
             // canvas.height = window.innerHeight;
-            // console.log(canvas.width, canvas.height);
             const element = this.$refs.TimeLine;
-            if (!element) {
-                console.log('element is null');
-                // window.setTimeout(this.drawAll, 500);
-                return;
-            }
-            console.log(element);
+            // if (!element) {
+            // console.log('element is null');
+            // window.setTimeout(this.drawAll, 500);
+            //     return;
+            // }
             const width = element.offsetWidth;
-            const height = element.offsetHeight;
+            const height = 200;
             var getPixelRatio = function (context) {
                 var backingStore = context.backingStorePixelRatio ||
                     context.webkitBackingStorePixelRatio ||
@@ -329,11 +347,6 @@ export default {
             canvas.height = height * ratio;
             canvas.style.height = '200px';
             canvas.style.width = '100%';
-            console.log(`Width: ${width}, Height: ${height}, Ratio: ${ratio}`);
-            //延时绘制
-            // setTimeout(() => {
-            //     this.drawAll();
-            // }, 1);
         },
         //画线
         drawLine(x1, y1, x2, y2, lineWidth = 1, color = '#fff') {
